@@ -63,6 +63,28 @@ const MyTemplatesPage = () => {
     }));
   };
 
+  const setModuleFilter = (moduleName: string | undefined) => {
+    setSelectedModule(moduleName || '');
+    setFilters(f => ({
+      ...f,
+      category: moduleName && moduleName !== 'all' ? moduleName : undefined,
+    }));
+  };
+
+  const setSubcategoryFilter = (subcategoryName: string | undefined) => {
+    if (selectedModule && subcategoryName && subcategoryName !== 'all') {
+      setFilters(f => ({
+        ...f,
+        category: `${selectedModule} - ${subcategoryName}`,
+      }));
+    } else {
+      setFilters(f => ({
+        ...f,
+        category: selectedModule && selectedModule !== 'all' ? selectedModule : undefined,
+      }));
+    }
+  };
+
   const clearFilters = () => {
     setFilters({ sort: 'newest' });
     setSelectedModule('');
@@ -165,7 +187,7 @@ const MyTemplatesPage = () => {
                   <SearchableSelect
                     label="Module"
                     value={selectedModule}
-                    onValueChange={(v) => { setSelectedModule(v); handleFilterChange('category', undefined); }}
+                    onValueChange={setModuleFilter}
                     placeholder="Select module"
                     options={modules}
                     includeOther={false}
@@ -176,8 +198,12 @@ const MyTemplatesPage = () => {
                 <div>
                   <SearchableSelect
                     label="Subcategory"
-                    value={filters.category || ''}
-                    onValueChange={(v) => handleFilterChange('category', selectedModule ? `${selectedModule} - ${v}` : v)}
+                    value={
+                      filters.category && filters.category.includes(' - ')
+                        ? filters.category.split(' - ')[1]
+                        : ''
+                    }
+                    onValueChange={setSubcategoryFilter}
                     placeholder="Select subcategory"
                     options={subcategories}
                     disabled={!selectedModule}
