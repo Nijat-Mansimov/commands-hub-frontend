@@ -6,23 +6,34 @@ export const templatesService = {
   getAll: async (filters: TemplateFilters = {}) => {
     const params = new URLSearchParams();
     
-    // Handle category/subcategory splitting
-    let { category, ...otherFilters } = filters;
-    
-    // If category contains " - ", split it into category and subcategory
-    if (category && category.includes(' - ')) {
-      const [moduleName, subcategoryName] = category.split(' - ');
-      params.set('category', moduleName);
-      if (subcategoryName) params.set('subcategory', subcategoryName);
-    } else {
-      Object.entries({ category, ...otherFilters }).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') params.set(key, String(value));
-      });
-    }
-    
-    // Add other filters
-    Object.entries(otherFilters).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+    // Build params, handling arrays and category/subcategory properly
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) return;
+      
+      // Handle arrays (join with comma)
+      if (Array.isArray(value)) {
+        const joinedValue = value.join(',');
+        if (joinedValue) {
+          params.set(key, joinedValue);
+        }
+        return;
+      }
+      
+      // Handle category/subcategory splitting
+      if (key === 'category' && typeof value === 'string') {
+        if (value.includes(' - ')) {
+          const [moduleName, subcategoryName] = value.split(' - ');
+          params.set('category', moduleName);
+          if (subcategoryName) params.set('subcategory', subcategoryName);
+        } else {
+          params.set('category', value);
+        }
+      } else if (key === 'subcategory') {
+        // Skip subcategory if it's already handled by category splitting
+      } else {
+        // Handle all other filters normally
+        params.set(key, String(value));
+      }
     });
     
     const { data } = await api.get<PaginatedResponse<Template>>(`/templates?${params}`);
@@ -52,21 +63,34 @@ export const templatesService = {
   getMyTemplates: async (filters: TemplateFilters = {}) => {
     const params = new URLSearchParams();
     
-    // Handle category/subcategory splitting
-    let { category, ...otherFilters } = filters;
-    
-    // If category contains " - ", split it into category and subcategory
-    if (category && category.includes(' - ')) {
-      const [moduleName, subcategoryName] = category.split(' - ');
-      params.set('category', moduleName);
-      if (subcategoryName) params.set('subcategory', subcategoryName);
-    } else if (category) {
-      params.set('category', category);
-    }
-    
-    // Add other filters
-    Object.entries(otherFilters).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') params.set(key, String(value));
+    // Build params, handling arrays and category/subcategory properly
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) return;
+      
+      // Handle arrays (join with comma)
+      if (Array.isArray(value)) {
+        const joinedValue = value.join(',');
+        if (joinedValue) {
+          params.set(key, joinedValue);
+        }
+        return;
+      }
+      
+      // Handle category/subcategory splitting
+      if (key === 'category' && typeof value === 'string') {
+        if (value.includes(' - ')) {
+          const [moduleName, subcategoryName] = value.split(' - ');
+          params.set('category', moduleName);
+          if (subcategoryName) params.set('subcategory', subcategoryName);
+        } else {
+          params.set('category', value);
+        }
+      } else if (key === 'subcategory') {
+        // Skip subcategory if it's already handled by category splitting
+      } else {
+        // Handle all other filters normally
+        params.set(key, String(value));
+      }
     });
     
     const { data } = await api.get<PaginatedResponse<Template>>(`/templates/my-templates?${params}`);
