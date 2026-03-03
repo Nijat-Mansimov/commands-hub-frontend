@@ -20,9 +20,7 @@ export default defineConfig(({ mode }) => ({
     minify: "terser",
   },
   plugins: [
-    react({
-      jsxImportSource: "react",
-    }),
+    react(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
