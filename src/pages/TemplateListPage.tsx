@@ -18,7 +18,6 @@ const TEMPLATES_PER_PAGE = 12;
 const TemplateListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedModule, setSelectedModule] = useState('');
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const { user } = useAuth();  // Get current user
 
@@ -39,6 +38,14 @@ const TemplateListPage = () => {
     limit: TEMPLATES_PER_PAGE,
   };
 
+  // For filtering by subcategory, we need to extract it from the full value
+  // If category contains " - ", it means user selected module and we need to extract subcategory
+  if (filters.category && filters.category.includes(' - ')) {
+    const [module, subcategory] = filters.category.split(' - ');
+    filters.category = module;
+    (filters as any).subcategory = subcategory;
+  }
+
   const { data, isLoading } = useTemplates(filters, user?._id);  // Pass userId
 
   const { data: filterOptions } = useFilterOptions();
@@ -50,6 +57,33 @@ const TemplateListPage = () => {
       params.set(key, value);
     } else {
       params.delete(key);
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  // Special handler for module/subcategory filtering
+  const setModuleFilter = (moduleName: string | undefined) => {
+    const params = new URLSearchParams(searchParams);
+    if (moduleName && moduleName !== 'all') {
+      params.set('category', moduleName);
+      params.delete('subcategory'); // Clear subcategory when module changes
+    } else {
+      params.delete('category');
+      params.delete('subcategory');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  // Special handler for subcategory filtering
+  const setSubcategoryFilter = (subcategoryName: string | undefined) => {
+    const params = new URLSearchParams(searchParams);
+    const currentCategory = searchParams.get('category');
+    if (subcategoryName && subcategoryName !== 'all' && currentCategory) {
+      params.set('subcategory', subcategoryName);
+    } else {
+      params.delete('subcategory');
     }
     params.set('page', '1');
     setSearchParams(params);
@@ -71,7 +105,8 @@ const TemplateListPage = () => {
 
   const categoriesHierarchy = options?.categoriesHierarchy || {};
   const modules = Object.keys(categoriesHierarchy);
-  const subcategories = selectedModule ? categoriesHierarchy[selectedModule] || [] : [];
+  const selectedModuleFromParams = searchParams.get('category') || '';
+  const subcategories = selectedModuleFromParams ? categoriesHierarchy[selectedModuleFromParams] || [] : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,9 +140,9 @@ const TemplateListPage = () => {
             <SlidersHorizontal className="h-4 w-4" />
             Filters
             {activeFilters.length > 0 && (
-              <Badge className="bg-primary/20 text-primary border-primary/30 text-xs py-0">
+              <span className="inline-flex items-center justify-center px-2 py-1 bg-primary/20 text-primary border border-primary/30 rounded text-xs font-mono">
                 {activeFilters.length}
-              </Badge>
+              </span>
             )}
             {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </Button>
@@ -117,14 +152,16 @@ const TemplateListPage = () => {
         {activeFilters.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {activeFilters.map(key => (
-              <Badge
+              <div
                 key={key}
-                className="bg-primary/10 text-primary border-primary/30 cursor-pointer hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary border border-primary/30 rounded text-xs font-mono cursor-pointer hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                 onClick={() => setFilter(key, undefined)}
+                role="button"
+                tabIndex={0}
               >
                 {key}: {searchParams.get(key)}
                 <X className="h-3 w-3 ml-1" />
-              </Badge>
+              </div>
             ))}
             <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground font-mono underline">
               Clear all
@@ -141,8 +178,8 @@ const TemplateListPage = () => {
                 <div>
                   <SearchableSelect
                     label="Module"
-                    value={selectedModule}
-                    onValueChange={(v) => { setSelectedModule(v); setFilter('category', undefined); }}
+                    value={searchParams.get('category') || ''}
+                    onValueChange={setModuleFilter}
                     placeholder="Select module"
                     options={modules}
                     includeOther={false}
@@ -153,11 +190,11 @@ const TemplateListPage = () => {
                 <div>
                   <SearchableSelect
                     label="Subcategory"
-                    value={filters.category || ''}
-                    onValueChange={(v) => setFilter('category', selectedModule ? `${selectedModule} - ${v}` : v)}
+                    value={searchParams.get('subcategory') || ''}
+                    onValueChange={setSubcategoryFilter}
                     placeholder="Select subcategory"
                     options={subcategories}
-                    disabled={!selectedModule}
+                    disabled={!searchParams.get('category')}
                     includeOther={true}
                   />
                 </div>
