@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Eye, Shield, Search, Star } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Shield, Search, Star, ChevronDown, ChevronUp, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
+import SearchableSelect from '@/components/templates/SearchableSelect';
+import { useFilterOptions } from '@/hooks/useTemplates';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+interface MyTemplatesFilters extends TemplateFilters {
+  category?: string;
+  difficulty?: string;
+  targetSystem?: string;
+}
 import { useMyTemplates } from '@/hooks/useTemplates';
 import { templatesService } from '@/services/templates';
 import { toast } from '@/hooks/use-toast';
@@ -29,11 +37,45 @@ const MyTemplatesPage = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();  // Get current user
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<TemplateFilters>({ sort: 'newest' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedModule, setSelectedModule] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [filters, setFilters] = useState<MyTemplatesFilters>({ sort: 'newest' });
 
   const { data, isLoading } = useMyTemplates(filters, user?._id);  // Pass userId
+  const { data: filterOptions } = useFilterOptions();
+  const options = filterOptions?.data;
 
   const templates = data?.data || [];
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(f => ({ ...f, search: searchInput || undefined }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const handleFilterChange = (key: string, value: string | undefined) => {
+    setFilters(f => ({
+      ...f,
+      [key]: value && value !== 'all' ? value : undefined,
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ sort: 'newest' });
+    setSelectedModule('');
+    setSearchInput('');
+  };
+
+  const activeFilters = Object.entries(filters)
+    .filter(([key, value]) => value && key !== 'sort' && key !== 'limit')
+    .map(([key]) => key);
+
+  const categoriesHierarchy = options?.categoriesHierarchy || {};
+  const modules = Object.keys(categoriesHierarchy);
+  const subcategories = selectedModule ? categoriesHierarchy[selectedModule] || [] : [];
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -65,27 +107,134 @@ const MyTemplatesPage = () => {
           </Link>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-2 mb-6">
-          <div className="relative flex-1 max-w-xs">
+        {/* Search + Filter toggle */}
+        <div className="flex gap-2 mb-4">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search my templates..."
-              onChange={e => setFilters(f => ({ ...f, search: e.target.value || undefined }))}
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
               className="pl-10 bg-secondary border-border font-mono text-sm"
             />
           </div>
-          <Select value={filters.sort || 'newest'} onValueChange={(v: any) => setFilters(f => ({ ...f, sort: v }))}>
-            <SelectTrigger className="w-36 bg-secondary border-border text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="mostUsed">Most Used</SelectItem>
-              <SelectItem value="topRated">Top Rated</SelectItem>
-            </SelectContent>
-          </Select>
+          <Button
+            variant="outline"
+            className="border-border hover:border-primary/50 gap-2"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+            {activeFilters.length > 0 && (
+              <span className="inline-flex items-center justify-center px-2 py-1 bg-primary/20 text-primary border border-primary/30 rounded text-xs font-mono">
+                {activeFilters.length}
+              </span>
+            )}
+            {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </Button>
         </div>
+
+        {/* Active filters */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {activeFilters.map(key => (
+              <div
+                key={key}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary border border-primary/30 rounded text-xs font-mono cursor-pointer hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                onClick={() => handleFilterChange(key, undefined)}
+                role="button"
+                tabIndex={0}
+              >
+                {key}: {filters[key as keyof MyTemplatesFilters]}
+                <X className="h-3 w-3 ml-1" />
+              </div>
+            ))}
+            <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground font-mono underline">
+              Clear all
+            </button>
+          </div>
+        )}
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <Card className="bg-card border-border mb-6 animate-fade-in">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {/* Module/Category with Search */}
+                <div>
+                  <SearchableSelect
+                    label="Module"
+                    value={selectedModule}
+                    onValueChange={(v) => { setSelectedModule(v); handleFilterChange('category', undefined); }}
+                    placeholder="Select module"
+                    options={modules}
+                    includeOther={false}
+                  />
+                </div>
+
+                {/* Subcategory with Search */}
+                <div>
+                  <SearchableSelect
+                    label="Subcategory"
+                    value={filters.category || ''}
+                    onValueChange={(v) => handleFilterChange('category', selectedModule ? `${selectedModule} - ${v}` : v)}
+                    placeholder="Select subcategory"
+                    options={subcategories}
+                    disabled={!selectedModule}
+                    includeOther={true}
+                  />
+                </div>
+
+                {/* Target System */}
+                <div>
+                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Target System</label>
+                  <Select value={filters.targetSystem || ''} onValueChange={v => handleFilterChange('targetSystem', v)}>
+                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
+                      <SelectValue placeholder="All targets" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      <SelectItem value="all" className="text-xs">All targets</SelectItem>
+                      {(options?.targetSystems || ['Linux', 'Windows', 'Active Directory', 'Web Application', 'Network', 'Cloud']).map(t => (
+                        <SelectItem key={t} value={t} className="text-xs font-mono">{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Difficulty */}
+                <div>
+                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Difficulty</label>
+                  <Select value={filters.difficulty || ''} onValueChange={v => handleFilterChange('difficulty', v)}>
+                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
+                      <SelectValue placeholder="All levels" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      <SelectItem value="all" className="text-xs">All levels</SelectItem>
+                      {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map(d => (
+                        <SelectItem key={d} value={d} className="text-xs font-mono">{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sort */}
+                <div>
+                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Sort By</label>
+                  <Select value={filters.sort || 'newest'} onValueChange={(v: any) => setFilters(f => ({ ...f, sort: v }))}>
+                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      <SelectItem value="newest" className="text-xs">Newest</SelectItem>
+                      <SelectItem value="mostUsed" className="text-xs">Most Used</SelectItem>
+                      <SelectItem value="topRated" className="text-xs">Top Rated</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {isLoading ? (
           <div className="space-y-3">
@@ -124,10 +273,10 @@ const MyTemplatesPage = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-sm truncate">{template.name}</h3>
                       {template.isFeatured && (
-                        <Badge className="bg-warning/20 text-warning border-warning/30 text-xs shrink-0">Featured</Badge>
+                        <span className="inline-block px-2 py-0.5 bg-warning/20 text-warning border border-warning/30 text-xs rounded font-mono">Featured</span>
                       )}
                       {!template.published && (
-                        <Badge className="bg-muted text-muted-foreground text-xs shrink-0">Draft</Badge>
+                        <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded font-mono">Draft</span>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground font-mono">{template.category}</p>
