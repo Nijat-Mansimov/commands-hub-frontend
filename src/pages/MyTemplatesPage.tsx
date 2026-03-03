@@ -84,17 +84,16 @@ const MyTemplatesPage = () => {
   // Multi-select handler for subcategory
   const setSubcategoryFilter = (subcategories: string[]) => {
     if (subcategories.length > 0 && selectedModule) {
-      // Join with module name for backend
-      const combined = subcategories.map(s => `${selectedModule} - ${s}`).join(',');
+      // Set subcategory as separate field
       setFilters(f => ({
         ...f,
-        category: combined,
+        subcategory: subcategories.join(','),
       }));
-    } else if (selectedModule) {
-      // Just keep module if no subcategories selected
+    } else {
+      // Clear subcategory if none selected
       setFilters(f => ({
         ...f,
-        category: selectedModule,
+        subcategory: undefined,
       }));
     }
   };
