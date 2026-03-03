@@ -4,11 +4,11 @@ import { Search, Filter, X, ChevronDown, ChevronUp, SlidersHorizontal } from 'lu
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import TemplateCard from '@/components/templates/TemplateCard';
 import SearchableSelect from '@/components/templates/SearchableSelect';
+import MultiSearchableSelect from '@/components/templates/MultiSearchableSelect';
 import { useTemplates, useFilterOptions } from '@/hooks/useTemplates';
 import { useAuth } from '@/context/AuthContext';
 import type { TemplateFilters } from '@/types/template';
@@ -62,11 +62,11 @@ const TemplateListPage = () => {
     setSearchParams(params);
   };
 
-  // Special handler for module/subcategory filtering
-  const setModuleFilter = (moduleName: string | undefined) => {
+  // Multi-select handler for module/category
+  const setModuleFilter = (modules: string[]) => {
     const params = new URLSearchParams(searchParams);
-    if (moduleName && moduleName !== 'all') {
-      params.set('category', moduleName);
+    if (modules.length > 0) {
+      params.set('category', modules.join(','));
       params.delete('subcategory'); // Clear subcategory when module changes
     } else {
       params.delete('category');
@@ -76,14 +76,26 @@ const TemplateListPage = () => {
     setSearchParams(params);
   };
 
-  // Special handler for subcategory filtering
-  const setSubcategoryFilter = (subcategoryName: string | undefined) => {
+  // Multi-select handler for subcategory
+  const setSubcategoryFilter = (subcategories: string[]) => {
     const params = new URLSearchParams(searchParams);
-    const currentCategory = searchParams.get('category');
-    if (subcategoryName && subcategoryName !== 'all' && currentCategory) {
-      params.set('subcategory', subcategoryName);
+    const currentCategories = searchParams.get('category');
+    if (subcategories.length > 0 && currentCategories) {
+      params.set('subcategory', subcategories.join(','));
     } else {
       params.delete('subcategory');
+    }
+    params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  // Multi-select handler for difficulty and targetSystem
+  const setMultiFilter = (key: string, values: string[]) => {
+    const params = new URLSearchParams(searchParams);
+    if (values.length > 0) {
+      params.set(key, values.join(','));
+    } else {
+      params.delete(key);
     }
     params.set('page', '1');
     setSearchParams(params);
@@ -174,61 +186,53 @@ const TemplateListPage = () => {
           <Card className="bg-card border-border mb-6 animate-fade-in">
             <CardContent className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {/* Module/Category with Search */}
+                {/* Module/Category Multi-Select */}
                 <div>
-                  <SearchableSelect
+                  <MultiSearchableSelect
                     label="Module"
-                    value={searchParams.get('category') || ''}
+                    value={searchParams.get('category')?.split(',') || []}
                     onValueChange={setModuleFilter}
-                    placeholder="Select module"
+                    placeholder="Select modules"
                     options={modules}
                     includeOther={false}
                   />
                 </div>
 
-                {/* Subcategory with Search */}
+                {/* Subcategory Multi-Select */}
                 <div>
-                  <SearchableSelect
+                  <MultiSearchableSelect
                     label="Subcategory"
-                    value={searchParams.get('subcategory') || ''}
+                    value={searchParams.get('subcategory')?.split(',') || []}
                     onValueChange={setSubcategoryFilter}
-                    placeholder="Select subcategory"
+                    placeholder="Select subcategories"
                     options={subcategories}
                     disabled={!searchParams.get('category')}
                     includeOther={true}
                   />
                 </div>
 
-                {/* Target System */}
+                {/* Target System Multi-Select */}
                 <div>
-                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Target System</label>
-                  <Select value={filters.targetSystem || ''} onValueChange={v => setFilter('targetSystem', v)}>
-                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
-                      <SelectValue placeholder="All targets" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      <SelectItem value="all" className="text-xs">All targets</SelectItem>
-                      {(options?.targetSystems || ['Linux', 'Windows', 'Active Directory', 'Web Application', 'Network', 'Cloud', 'Cross-Platform', 'Mobile']).map(t => (
-                        <SelectItem key={t} value={t} className="text-xs font-mono">{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSearchableSelect
+                    label="Target System"
+                    value={searchParams.get('targetSystem')?.split(',') || []}
+                    onValueChange={(values) => setMultiFilter('targetSystem', values)}
+                    placeholder="Select targets"
+                    options={options?.targetSystems || ['Linux', 'Windows', 'Active Directory', 'Web Application', 'Network', 'Cloud', 'Cross-Platform', 'Mobile']}
+                    includeOther={false}
+                  />
                 </div>
 
-                {/* Difficulty */}
+                {/* Difficulty Multi-Select */}
                 <div>
-                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Difficulty</label>
-                  <Select value={filters.difficulty || ''} onValueChange={v => setFilter('difficulty', v)}>
-                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
-                      <SelectValue placeholder="All levels" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      <SelectItem value="all" className="text-xs">All levels</SelectItem>
-                      {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map(d => (
-                        <SelectItem key={d} value={d} className="text-xs font-mono">{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <MultiSearchableSelect
+                    label="Difficulty"
+                    value={searchParams.get('difficulty')?.split(',') || []}
+                    onValueChange={(values) => setMultiFilter('difficulty', values)}
+                    placeholder="Select levels"
+                    options={['Beginner', 'Intermediate', 'Advanced', 'Expert']}
+                    includeOther={false}
+                  />
                 </div>
 
                 {/* Sort */}
