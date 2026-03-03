@@ -29,6 +29,7 @@ const TemplateListPage = () => {
   const filters: TemplateFilters = {
     search: searchParams.get('search') || undefined,
     category: searchParams.get('category') || undefined,
+    subcategory: searchParams.get('subcategory') || undefined,
     tool: searchParams.get('tool') || undefined,
     targetSystem: searchParams.get('targetSystem') || undefined,
     difficulty: searchParams.get('difficulty') || undefined,
@@ -38,15 +39,8 @@ const TemplateListPage = () => {
     limit: TEMPLATES_PER_PAGE,
   };
 
-  // For filtering by subcategory, we need to extract it from the full value
-  // If category contains " - ", it means user selected module and we need to extract subcategory
-  if (filters.category && filters.category.includes(' - ')) {
-    const [module, subcategory] = filters.category.split(' - ');
-    filters.category = module;
-    (filters as any).subcategory = subcategory;
-  }
-
   const { data, isLoading } = useTemplates(filters, user?._id);  // Pass userId
+
 
   const { data: filterOptions } = useFilterOptions();
   const options = filterOptions?.data;
@@ -112,7 +106,7 @@ const TemplateListPage = () => {
 
   const clearFilters = () => setSearchParams({});
 
-  const activeFilters = ['search', 'category', 'tool', 'targetSystem', 'difficulty', 'minRating', 'sort']
+  const activeFilters = ['search', 'category', 'subcategory', 'tool', 'targetSystem', 'difficulty', 'minRating', 'sort']
     .filter(k => searchParams.get(k) && searchParams.get(k) !== 'newest');
 
   const categoriesHierarchy = options?.categoriesHierarchy || {};
