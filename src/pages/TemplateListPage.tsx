@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import TemplateCard from '@/components/templates/TemplateCard';
+import SearchableSelect from '@/components/templates/SearchableSelect';
 import { useTemplates, useFilterOptions } from '@/hooks/useTemplates';
 import { useAuth } from '@/context/AuthContext';
 import type { TemplateFilters } from '@/types/template';
@@ -18,7 +19,13 @@ const TemplateListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
   const [selectedModule, setSelectedModule] = useState('');
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const { user } = useAuth();  // Get current user
+
+  // Sync searchInput with URL params
+  useEffect(() => {
+    setSearchInput(searchParams.get('search') || '');
+  }, [searchParams]);
 
   const filters: TemplateFilters = {
     search: searchParams.get('search') || undefined,
@@ -48,6 +55,15 @@ const TemplateListPage = () => {
     setSearchParams(params);
   };
 
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilter('search', searchInput || undefined);
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
   const clearFilters = () => setSearchParams({});
 
   const activeFilters = ['search', 'category', 'tool', 'targetSystem', 'difficulty', 'minRating', 'sort']
@@ -76,11 +92,8 @@ const TemplateListPage = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by name, tool, category, tag..."
-              defaultValue={filters.search || ''}
-              onChange={e => {
-                const v = e.target.value;
-                setTimeout(() => setFilter('search', v || undefined), 400);
-              }}
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
               className="pl-10 bg-secondary border-border font-mono text-sm"
             />
           </div>
@@ -124,41 +137,29 @@ const TemplateListPage = () => {
           <Card className="bg-card border-border mb-6 animate-fade-in">
             <CardContent className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {/* Module/Category */}
+                {/* Module/Category with Search */}
                 <div>
-                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Module</label>
-                  <Select
+                  <SearchableSelect
+                    label="Module"
                     value={selectedModule}
                     onValueChange={(v) => { setSelectedModule(v); setFilter('category', undefined); }}
-                  >
-                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
-                      <SelectValue placeholder="Select module" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border max-h-64">
-                      {modules.map(m => (
-                        <SelectItem key={m} value={m} className="text-xs font-mono">{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Select module"
+                    options={modules}
+                    includeOther={false}
+                  />
                 </div>
 
-                {/* Subcategory */}
+                {/* Subcategory with Search */}
                 <div>
-                  <label className="text-xs font-mono text-muted-foreground mb-1 block">Subcategory</label>
-                  <Select
+                  <SearchableSelect
+                    label="Subcategory"
                     value={filters.category || ''}
                     onValueChange={(v) => setFilter('category', selectedModule ? `${selectedModule} - ${v}` : v)}
+                    placeholder="Select subcategory"
+                    options={subcategories}
                     disabled={!selectedModule}
-                  >
-                    <SelectTrigger className="bg-muted/50 border-border text-xs h-8">
-                      <SelectValue placeholder="Select subcategory" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border max-h-64">
-                      {subcategories.map(s => (
-                        <SelectItem key={s} value={s} className="text-xs font-mono">{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    includeOther={true}
+                  />
                 </div>
 
                 {/* Target System */}
