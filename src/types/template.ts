@@ -69,6 +69,7 @@ export interface FilterOptions {
 export interface TemplateFilters {
   search?: string;
   category?: string;
+  subcategory?: string;
   tool?: string;
   targetSystem?: string;
   difficulty?: string;
