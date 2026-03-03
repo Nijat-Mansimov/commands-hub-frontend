@@ -8,21 +8,15 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    allowedHosts: ["commandshub.onrender.com", "localhost", "127.0.0.1"],
     hmr: {
       overlay: false,
     },
   },
   build: {
-    target: "ES2020",
     outDir: "dist",
     sourcemap: false,
-    minify: "terser",
   },
-  plugins: [
-    react(),
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
