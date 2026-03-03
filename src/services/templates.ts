@@ -6,7 +6,7 @@ export const templatesService = {
   getAll: async (filters: TemplateFilters = {}) => {
     const params = new URLSearchParams();
     
-    // Build params, handling arrays and category/subcategory properly
+    // Build params, handling arrays properly
     Object.entries(filters).forEach(([key, value]) => {
       if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) return;
       
@@ -19,21 +19,8 @@ export const templatesService = {
         return;
       }
       
-      // Handle category/subcategory splitting
-      if (key === 'category' && typeof value === 'string') {
-        if (value.includes(' - ')) {
-          const [moduleName, subcategoryName] = value.split(' - ');
-          params.set('category', moduleName);
-          if (subcategoryName) params.set('subcategory', subcategoryName);
-        } else {
-          params.set('category', value);
-        }
-      } else if (key === 'subcategory') {
-        // Skip subcategory if it's already handled by category splitting
-      } else {
-        // Handle all other filters normally
-        params.set(key, String(value));
-      }
+      // Handle all other filters normally
+      params.set(key, String(value));
     });
     
     const { data } = await api.get<PaginatedResponse<Template>>(`/templates?${params}`);
@@ -63,7 +50,7 @@ export const templatesService = {
   getMyTemplates: async (filters: TemplateFilters = {}) => {
     const params = new URLSearchParams();
     
-    // Build params, handling arrays and category/subcategory properly
+    // Build params, handling arrays properly
     Object.entries(filters).forEach(([key, value]) => {
       if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) return;
       
@@ -76,21 +63,8 @@ export const templatesService = {
         return;
       }
       
-      // Handle category/subcategory splitting
-      if (key === 'category' && typeof value === 'string') {
-        if (value.includes(' - ')) {
-          const [moduleName, subcategoryName] = value.split(' - ');
-          params.set('category', moduleName);
-          if (subcategoryName) params.set('subcategory', subcategoryName);
-        } else {
-          params.set('category', value);
-        }
-      } else if (key === 'subcategory') {
-        // Skip subcategory if it's already handled by category splitting
-      } else {
-        // Handle all other filters normally
-        params.set(key, String(value));
-      }
+      // Handle all other filters normally
+      params.set(key, String(value));
     });
     
     const { data } = await api.get<PaginatedResponse<Template>>(`/templates/my-templates?${params}`);
