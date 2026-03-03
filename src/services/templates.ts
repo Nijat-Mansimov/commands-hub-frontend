@@ -5,9 +5,26 @@ import type { ApiResponse } from '@/types/common';
 export const templatesService = {
   getAll: async (filters: TemplateFilters = {}) => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
+    
+    // Handle category/subcategory splitting
+    let { category, ...otherFilters } = filters;
+    
+    // If category contains " - ", split it into category and subcategory
+    if (category && category.includes(' - ')) {
+      const [moduleName, subcategoryName] = category.split(' - ');
+      params.set('category', moduleName);
+      if (subcategoryName) params.set('subcategory', subcategoryName);
+    } else {
+      Object.entries({ category, ...otherFilters }).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      });
+    }
+    
+    // Add other filters
+    Object.entries(otherFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== '') params.set(key, String(value));
     });
+    
     const { data } = await api.get<PaginatedResponse<Template>>(`/templates?${params}`);
     return data;
   },
@@ -34,9 +51,24 @@ export const templatesService = {
 
   getMyTemplates: async (filters: TemplateFilters = {}) => {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
+    
+    // Handle category/subcategory splitting
+    let { category, ...otherFilters } = filters;
+    
+    // If category contains " - ", split it into category and subcategory
+    if (category && category.includes(' - ')) {
+      const [moduleName, subcategoryName] = category.split(' - ');
+      params.set('category', moduleName);
+      if (subcategoryName) params.set('subcategory', subcategoryName);
+    } else if (category) {
+      params.set('category', category);
+    }
+    
+    // Add other filters
+    Object.entries(otherFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== '') params.set(key, String(value));
     });
+    
     const { data } = await api.get<PaginatedResponse<Template>>(`/templates/my-templates?${params}`);
     return data;
   },
