@@ -13,7 +13,18 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  build: {
+    target: "ES2020",
+    outDir: "dist",
+    sourcemap: false,
+    minify: "terser",
+  },
+  plugins: [
+    react({
+      jsxImportSource: "react",
+    }),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
