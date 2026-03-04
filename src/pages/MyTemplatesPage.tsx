@@ -41,7 +41,7 @@ const MyTemplatesPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedModule, setSelectedModule] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [filters, setFilters] = useState<MyTemplatesFilters>({ sort: 'newest' });
+  const [filters, setFilters] = useState<MyTemplatesFilters>({ sort: 'newest', page: 1, limit: 10 });
 
   const { data, isLoading } = useMyTemplates(filters, user?._id);  // Pass userId
   const { data: filterOptions } = useFilterOptions();
@@ -58,10 +58,17 @@ const MyTemplatesPage = () => {
   }, [searchInput]);
 
   const handleFilterChange = (key: string, value: string | undefined) => {
-    setFilters(f => ({
-      ...f,
-      [key]: value && value !== 'all' ? value : undefined,
-    }));
+    setFilters(f => {
+      const newFilters = {
+        ...f,
+        [key]: value && value !== 'all' ? (key === 'page' ? Number(value) : value) : undefined,
+      };
+      // Reset to page 1 when filter changes (except for page changes themselves)
+      if (key !== 'page') {
+        newFilters.page = 1;
+      }
+      return newFilters;
+    });
   };
 
   // Multi-select handler for module/category
@@ -357,6 +364,51 @@ const MyTemplatesPage = () => {
               </Card>
             ))}
           </div>
+
+          {/* Pagination */}
+          {data?.pagination && data.pagination.pages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={(filters.page || 1) === 1}
+                onClick={() => handleFilterChange('page', String((filters.page || 1) - 1))}
+                className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </Button>
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(data.pagination.pages, 7) }).map((_, i) => {
+                  const page = i + 1;
+                  const isCurrentPage = (filters.page || 1) === page;
+                  return (
+                    <Button
+                      key={page}
+                      variant={isCurrentPage ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleFilterChange('page', String(page))}
+                      className={`w-8 h-8 font-mono text-xs flex items-center justify-center ${
+                        isCurrentPage 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'border-border hover:bg-primary/10 hover:border-primary'
+                      }`}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={(filters.page || 1) === data.pagination.pages}
+                onClick={() => handleFilterChange('page', String((filters.page || 1) + 1))}
+                className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </Button>
+            </div>
+          )}
         )}
       </div>
 
