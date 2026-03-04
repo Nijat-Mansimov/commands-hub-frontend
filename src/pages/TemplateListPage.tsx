@@ -273,26 +273,39 @@ const TemplateListPage = () => {
 
             {/* Pagination */}
             {data.pagination && data.pagination.pages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
+              <div className="flex items-center justify-center gap-2 mt-8 py-4">
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={filters.page === 1}
-                  onClick={() => setFilter('page', String((filters.page || 1) - 1))}
-                  className="border-border font-mono"
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set('page', String((filters.page || 1) - 1));
+                    setSearchParams(params);
+                  }}
+                  className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </Button>
                 <div className="flex gap-1">
                   {Array.from({ length: Math.min(data.pagination.pages, 7) }).map((_, i) => {
                     const page = i + 1;
+                    const isCurrentPage = filters.page === page;
                     return (
                       <Button
                         key={page}
-                        variant={filters.page === page ? 'default' : 'outline'}
+                        variant={isCurrentPage ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setFilter('page', String(page))}
-                        className={`w-8 h-8 font-mono text-xs ${filters.page === page ? 'bg-primary text-primary-foreground' : 'border-border'}`}
+                        onClick={() => {
+                          const params = new URLSearchParams(searchParams);
+                          params.set('page', String(page));
+                          setSearchParams(params);
+                        }}
+                        className={`w-8 h-8 font-mono text-xs flex items-center justify-center ${
+                          isCurrentPage 
+                            ? 'bg-primary text-primary-foreground border-primary' 
+                            : 'border-border hover:bg-primary/10 hover:border-primary'
+                        }`}
                       >
                         {page}
                       </Button>
@@ -303,8 +316,12 @@ const TemplateListPage = () => {
                   variant="outline"
                   size="sm"
                   disabled={filters.page === data.pagination.pages}
-                  onClick={() => setFilter('page', String((filters.page || 1) + 1))}
-                  className="border-border font-mono"
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set('page', String((filters.page || 1) + 1));
+                    setSearchParams(params);
+                  }}
+                  className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </Button>
