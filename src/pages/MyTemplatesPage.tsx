@@ -314,101 +314,101 @@ const MyTemplatesPage = () => {
             </Link>
           </div>
         ) : (
-          <div className="space-y-3">
-            {templates.map(template => (
-              <Card key={template._id} className="bg-card border-border hover:border-primary/30 transition-all">
-                <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-sm truncate">{template.name}</h3>
-                      {template.isFeatured && (
-                        <span className="inline-block px-2 py-0.5 bg-warning/20 text-warning border border-warning/30 text-xs rounded font-mono">Featured</span>
-                      )}
-                      {!template.published && (
-                        <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded font-mono">Draft</span>
-                      )}
+          <>
+            <div className="space-y-3">
+              {templates.map(template => (
+                <Card key={template._id} className="bg-card border-border hover:border-primary/30 transition-all">
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-sm truncate">{template.name}</h3>
+                        {template.isFeatured && (
+                          <span className="inline-block px-2 py-0.5 bg-warning/20 text-warning border border-warning/30 text-xs rounded font-mono">Featured</span>
+                        )}
+                        {!template.published && (
+                          <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded font-mono">Draft</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground font-mono">{template.category}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Star className="h-3 w-3 text-warning" />
+                          {(template.ratings?.averageRating || 0).toFixed(1)} ({template.ratings?.totalRatings || 0})
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {template.usageCount || 0} uses
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground font-mono">{template.category}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-warning" />
-                        {(template.ratings?.averageRating || 0).toFixed(1)} ({template.ratings?.totalRatings || 0})
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        {template.usageCount || 0} uses
-                      </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link to={`/templates/${template._id}`}>
+                        <Button variant="ghost" size="sm" className="h-8 font-mono text-xs">
+                          <Eye className="h-3.5 w-3.5 mr-1" /> View
+                        </Button>
+                      </Link>
+                      <Link to={`/templates/${template._id}/edit`}>
+                        <Button variant="outline" size="sm" className="h-8 border-border font-mono text-xs hover:border-primary/50">
+                          <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteId(template._id)}
+                        className="h-8 font-mono text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link to={`/templates/${template._id}`}>
-                      <Button variant="ghost" size="sm" className="h-8 font-mono text-xs">
-                        <Eye className="h-3.5 w-3.5 mr-1" /> View
-                      </Button>
-                    </Link>
-                    <Link to={`/templates/${template._id}/edit`}>
-                      <Button variant="outline" size="sm" className="h-8 border-border font-mono text-xs hover:border-primary/50">
-                        <Edit className="h-3.5 w-3.5 mr-1" /> Edit
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeleteId(template._id)}
-                      className="h-8 font-mono text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {data?.pagination && data.pagination.pages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8 py-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={(filters.page || 1) === 1}
-                onClick={() => handleFilterChange('page', String((filters.page || 1) - 1))}
-                className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </Button>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(data.pagination.pages, 7) }).map((_, i) => {
-                  const page = i + 1;
-                  const isCurrentPage = (filters.page || 1) === page;
-                  return (
-                    <Button
-                      key={page}
-                      variant={isCurrentPage ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleFilterChange('page', String(page))}
-                      className={`w-8 h-8 font-mono text-xs flex items-center justify-center ${
-                        isCurrentPage 
-                          ? 'bg-primary text-primary-foreground border-primary' 
-                          : 'border-border hover:bg-primary/10 hover:border-primary'
-                      }`}
-                    >
-                      {page}
-                    </Button>
-                  );
-                })}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={(filters.page || 1) === data.pagination.pages}
-                onClick={() => handleFilterChange('page', String((filters.page || 1) + 1))}
-                className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          )}
+            {data?.pagination && data.pagination.pages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8 py-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={(filters.page || 1) === 1}
+                  onClick={() => handleFilterChange('page', String((filters.page || 1) - 1))}
+                  className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </Button>
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(data.pagination.pages, 7) }).map((_, i) => {
+                    const page = i + 1;
+                    const isCurrentPage = (filters.page || 1) === page;
+                    return (
+                      <Button
+                        key={page}
+                        variant={isCurrentPage ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleFilterChange('page', String(page))}
+                        className={`w-8 h-8 font-mono text-xs flex items-center justify-center ${
+                          isCurrentPage 
+                            ? 'bg-primary text-primary-foreground border-primary' 
+                            : 'border-border hover:bg-primary/10 hover:border-primary'
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={(filters.page || 1) === data.pagination.pages}
+                  onClick={() => handleFilterChange('page', String((filters.page || 1) + 1))}
+                  className="border-border font-mono hover:bg-primary/10 hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
